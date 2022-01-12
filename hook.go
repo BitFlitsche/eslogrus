@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v7"
@@ -30,6 +31,8 @@ type ElasticHook struct {
 	ctx       context.Context
 	ctxCancel context.CancelFunc
 	fireFunc  fireFunc
+	mu        sync.RWMutex
+	wg        sync.WaitGroup
 }
 
 type message struct {
@@ -77,6 +80,8 @@ func newHookFuncAndFireFunc(client *elasticsearch.Client, host string, levels []
 }
 
 func (hook *ElasticHook) Fire(entry *logrus.Entry) error {
+	hook.mu.RLock() // Allow multiple go routines to log simultaneously
+	defer hook.mu.RUnlock()
 	return hook.fireFunc(entry, hook)
 }
 
