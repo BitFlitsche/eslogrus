@@ -1,4 +1,4 @@
-package elogrus
+package eslogrus
 
 import (
 	"bytes"
@@ -14,18 +14,10 @@ import (
 	"time"
 )
 
-type NewHookFunc func(client *elasticsearch.Client, host string, level logrus.Level, index string) (*ElasticHook, error)
+type NewHookFunc func(client *elasticsearch.Client, host string, levels []logrus.Level, index string) (*ElasticHook, error)
 
 func TestSyncHook(t *testing.T) {
 	hookTest(NewElasticHook, "sync-log", t)
-}
-
-func TestAsyncHook(t *testing.T) {
-	hookTest(NewAsyncElasticHook, "async-log", t)
-}
-
-func TestBulkProcessorHook(t *testing.T) {
-	hookTest(NewBulkProcessorElasticHook, "bulk-log", t)
 }
 
 func hookTest(hookfunc NewHookFunc, indexName string, t *testing.T) {
@@ -47,7 +39,8 @@ func hookTest(hookfunc NewHookFunc, indexName string, t *testing.T) {
 
 	_, _ = client.Indices.Delete([]string{indexName})
 
-	hook, err := hookfunc(client, "localhost", logrus.DebugLevel, indexName)
+	logLevels := []logrus.Level{logrus.ErrorLevel}
+	hook, err := hookfunc(client, "localhost", logLevels, indexName)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -140,7 +133,8 @@ func TestError(t *testing.T) {
 
 	_, _ = client.Indices.Delete([]string{"errorlog"})
 
-	hook, err := NewElasticHook(client, "localhost", logrus.DebugLevel, "errorlog")
+	logLevels := []logrus.Level{logrus.ErrorLevel}
+	hook, err := NewElasticHook(client, "localhost", logLevels, "errorlog")
 	if err != nil {
 		log.Panic(err)
 		t.FailNow()

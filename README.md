@@ -1,2 +1,3 @@
-# ELasticLogrus
-Logrus Hook for Elasticsearch v7
+# eslogrus
+Elasticsearch v7 hook for Logrus
+

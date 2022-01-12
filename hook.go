@@ -1,4 +1,4 @@
-package elogrus
+package eslogrus
 
 import (
 	"bytes"
@@ -15,17 +15,13 @@ import (
 )
 
 var (
-	// ErrCannotCreateIndex Fired if the index is not created
 	ErrCannotCreateIndex = fmt.Errorf("cannot create index")
 )
 
-// IndexNameFunc get index name
 type IndexNameFunc func() string
 
 type fireFunc func(entry *logrus.Entry, hook *ElasticHook) error
 
-// ElasticHook is a logrus
-// hook for ElasticSearch
 type ElasticHook struct {
 	client    *elasticsearch.Client
 	host      string
@@ -45,46 +41,19 @@ type message struct {
 }
 
 // NewElasticHook creates new hook.
-// client - ElasticSearch client with specific es version (v5/v6/v7/...)
+// client - ElasticSearch client
 // host - host of system
-// level - log level
+// levels - log levels to log
 // index - name of the index in ElasticSearch
 func NewElasticHook(client *elasticsearch.Client, host string, levels []logrus.Level, index string) (*ElasticHook, error) {
-	return NewElasticHookWithFunc(client, host, levels, func() string { return index })
-}
-
-// NewElasticHookWithFunc creates new hook with
-// function that provides the index name. This is useful if the index name is
-// somehow dynamic especially based on time.
-// client - ElasticSearch client with specific es version (v5/v6/v7/...)
-// host - host of system
-// level - log level
-// indexFunc - function providing the name of index
-func NewElasticHookWithFunc(client *elasticsearch.Client, host string, levels []logrus.Level, indexFunc IndexNameFunc) (*ElasticHook, error) {
-	return newHookFuncAndFireFunc(client, host, levels, indexFunc, syncFireFunc)
+	return newHookFuncAndFireFunc(client, host, levels, func() string { return index }, syncFireFunc)
 }
 
 func newHookFuncAndFireFunc(client *elasticsearch.Client, host string, levels []logrus.Level, indexFunc IndexNameFunc, fireFunc fireFunc) (*ElasticHook, error) {
-	/*	for _, l := range []logrus.Level{
-			logrus.PanicLevel,
-			logrus.FatalLevel,
-			// logrus.ErrorLevel,
-			logrus.WarnLevel,
-			logrus.InfoLevel,
-			logrus.DebugLevel,
-			logrus.TraceLevel,
-		} {
-			if l <= level {
-				levels = append(levels, l)
-			}
-		}*/
-
 	ctx, cancel := context.WithCancel(context.TODO())
 
-	// Use the IndexExists service to check if a specified index exists.
 	indexExistsResp, err := client.Indices.Exists([]string{indexFunc()})
 	if err != nil {
-		// Handle error
 		cancel()
 		return nil, err
 	}
@@ -107,8 +76,6 @@ func newHookFuncAndFireFunc(client *elasticsearch.Client, host string, levels []
 	}, nil
 }
 
-// Fire is required to implement
-// Logrus hook
 func (hook *ElasticHook) Fire(entry *logrus.Entry) error {
 	return hook.fireFunc(entry, hook)
 }
@@ -123,11 +90,11 @@ func createMessage(entry *logrus.Entry, hook *ElasticHook) *message {
 	}
 
 	return &message{
-		hook.host,
-		entry.Time.UTC().Format(time.RFC3339Nano),
-		entry.Message,
-		entry.Data,
-		strings.ToUpper(level),
+		Host:      hook.host,
+		Timestamp: entry.Time.UTC().Format(time.RFC3339Nano),
+		Message:   entry.Message,
+		Data:      entry.Data,
+		Level:     strings.ToUpper(level),
 	}
 }
 
