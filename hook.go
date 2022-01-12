@@ -49,8 +49,8 @@ type message struct {
 // host - host of system
 // level - log level
 // index - name of the index in ElasticSearch
-func NewElasticHook(client *elasticsearch.Client, host string, level logrus.Level, index string) (*ElasticHook, error) {
-	return NewElasticHookWithFunc(client, host, level, func() string { return index })
+func NewElasticHook(client *elasticsearch.Client, host string, levels []logrus.Level, index string) (*ElasticHook, error) {
+	return NewElasticHookWithFunc(client, host, levels, func() string { return index })
 }
 
 // NewElasticHookWithFunc creates new hook with
@@ -60,25 +60,24 @@ func NewElasticHook(client *elasticsearch.Client, host string, level logrus.Leve
 // host - host of system
 // level - log level
 // indexFunc - function providing the name of index
-func NewElasticHookWithFunc(client *elasticsearch.Client, host string, level logrus.Level, indexFunc IndexNameFunc) (*ElasticHook, error) {
-	return newHookFuncAndFireFunc(client, host, level, indexFunc, syncFireFunc)
+func NewElasticHookWithFunc(client *elasticsearch.Client, host string, levels []logrus.Level, indexFunc IndexNameFunc) (*ElasticHook, error) {
+	return newHookFuncAndFireFunc(client, host, levels, indexFunc, syncFireFunc)
 }
 
-func newHookFuncAndFireFunc(client *elasticsearch.Client, host string, level logrus.Level, indexFunc IndexNameFunc, fireFunc fireFunc) (*ElasticHook, error) {
-	var levels []logrus.Level
-	for _, l := range []logrus.Level{
-		logrus.PanicLevel,
-		logrus.FatalLevel,
-		// logrus.ErrorLevel,
-		logrus.WarnLevel,
-		logrus.InfoLevel,
-		logrus.DebugLevel,
-		logrus.TraceLevel,
-	} {
-		if l <= level {
-			levels = append(levels, l)
-		}
-	}
+func newHookFuncAndFireFunc(client *elasticsearch.Client, host string, levels []logrus.Level, indexFunc IndexNameFunc, fireFunc fireFunc) (*ElasticHook, error) {
+	/*	for _, l := range []logrus.Level{
+			logrus.PanicLevel,
+			logrus.FatalLevel,
+			// logrus.ErrorLevel,
+			logrus.WarnLevel,
+			logrus.InfoLevel,
+			logrus.DebugLevel,
+			logrus.TraceLevel,
+		} {
+			if l <= level {
+				levels = append(levels, l)
+			}
+		}*/
 
 	ctx, cancel := context.WithCancel(context.TODO())
 
